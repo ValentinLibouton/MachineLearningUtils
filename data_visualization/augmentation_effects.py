@@ -1,3 +1,8 @@
+import random
+import matplotlib.pyplot as plt
+
+
+
 def plot_original_and_augmented(original_images, augmented_images, index=None, figsize=(10, 5)):
     """
     Displays an original image and its augmented version side by side.

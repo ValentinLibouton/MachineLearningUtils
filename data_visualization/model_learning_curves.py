@@ -1,4 +1,7 @@
-# Video N° 121
+import matplotlib.pyplot as plt
+
+
+
 # Plot the validation and training curves separatly
 def plot_loss_curves(history):
     """
