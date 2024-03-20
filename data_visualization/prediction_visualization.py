@@ -58,8 +58,13 @@ def predict_and_display_image(model, file_path, class_names):
     try:
         # Make a prediction
         pred = model.predict(tf.expand_dims(img, axis=0))
-        # Get the predicted class
-        pred_class = class_names[int(tf.round(pred))]
+
+        # Get the predicted class (binary or multi-class
+        if len(pred[0]) > 1:
+            pred_class = class_names[tf.argmax(pred[0])]
+        else:
+            pred_class = class_names[int(tf.round(pred[0]))]
+
         # Plot the image and predicted class
         plt.imshow(img)
         plt.title(f"Prediction: {pred_class}")
