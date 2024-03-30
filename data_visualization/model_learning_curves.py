@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 
 
-
-# Plot the validation and training curves separatly
 def plot_loss_curves(history):
     """
     Plots the loss and accuracy curves for training and validation.
@@ -53,6 +51,7 @@ def plot_loss_curves(history):
     plt.xlabel("epochs")
     plt.legend()
 
+
 def plot_loss_curves_v2(history):
     """
     Plots separate loss curves for training and validation metrics.
@@ -82,3 +81,63 @@ def plot_loss_curves_v2(history):
         plt.xlabel("Epochs")
         plt.legend()
         plt.show()
+
+
+def compare_histories(original_history, new_history, initial_epochs=5):
+    """
+    Compares two TensorFlow model History objects.
+
+    Args:
+      original_history: History object from original model (before new_history)
+      new_history: History object from continued model training (after original_history)
+      initial_epochs: Number of epochs in original_history (new_history plot starts from here)
+    """
+
+    # Dynamic detection of metric names
+    def find_metric_names(history):
+        loss, val_loss, accuracy, val_accuracy = None, None, None, None
+        for key in history.history.keys():
+            if "val" in key and "loss" in key:
+                val_loss = key
+            elif "val" in key and "acc" in key:  # To handle 'acc' and 'accuracy
+                val_accuracy = key
+            elif "acc" in key and "val" not in key:  # To handle 'acc' and 'accuracy
+                accuracy = key
+            elif "loss" in key and "val" not in key:
+                loss = key
+        return loss, val_loss, accuracy, val_accuracy
+
+    # Obtaining metric names for the original history
+    loss, val_loss, accuracy, val_accuracy = find_metric_names(original_history)
+
+    # Get original history measurements
+    acc = original_history.history[accuracy]
+    loss = original_history.history[loss]
+
+    val_acc = original_history.history[val_accuracy]
+    val_loss = original_history.history[val_loss]
+
+    # Combining the original history with the new history
+    total_acc = acc + new_history.history[accuracy]
+    total_loss = loss + new_history.history[loss]
+
+    total_val_acc = val_acc + new_history.history[val_accuracy]
+    total_val_loss = val_loss + new_history.history[val_loss]
+
+    plt.figure(figsize=(8, 8))
+    plt.subplot(2, 1, 1)
+    plt.plot(total_acc, label='Training Accuracy')
+    plt.plot(total_val_acc, label='Validation Accuracy')
+    plt.plot([initial_epochs-1, initial_epochs-1], plt.ylim(), label='Start Fine Tuning')
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(2, 1, 2)
+    plt.plot(total_loss, label='Training Loss')
+    plt.plot(total_val_loss, label='Validation Loss')
+    plt.plot([initial_epochs-1, initial_epochs-1], plt.ylim(), label='Start Fine Tuning')
+    plt.legend(loc='upper right')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('epoch')
+    plt.show()
+    
