@@ -11,6 +11,7 @@ try:
 except ImportError:
     py7zr = None
 
+
 def extract_zip_file(file_path, extract_to=None):
     """
     Extracts a ZIP file to a specified extract_to directory.
@@ -26,6 +27,7 @@ def extract_zip_file(file_path, extract_to=None):
         zip_ref.extractall(path=extract_to)
     print(f"{file_path} has been extracted to {extract_to if extract_to else 'current directory'}.")
 
+
 def extract_tar_file(file_path, extract_to=None):
     """
     Extracts a TAR.GZ file to a specified extract_to directory.
@@ -40,6 +42,7 @@ def extract_tar_file(file_path, extract_to=None):
     with tarfile.open(file_path, 'r:gz') as tar_ref:
         tar_ref.extractall(path=extract_to)
     print(f"{file_path} has been extracted to {extract_to if extract_to else 'current directory'}.")
+
 
 def extract_7z_file(file_path, extract_to=None):
     """
@@ -58,6 +61,7 @@ def extract_7z_file(file_path, extract_to=None):
         print(f"{file_path} has been extracted to {extract_to if extract_to else 'current directory'}.")
     else:
         print("py7zr module not available. Unable to extract .7z files.")
+
 
 def extract_archive_file(file_path, extract_to=None):
     """
