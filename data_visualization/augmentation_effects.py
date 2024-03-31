@@ -1,7 +1,8 @@
 import random
 import matplotlib.pyplot as plt
-import numpy as numpy
+import numpy as np
 import matplotlib.image as mpimg
+import tensorflow as tf
 
 
 def plot_original_and_augmented(original_images, augmented_images, index=None, figsize=(10, 5)):
