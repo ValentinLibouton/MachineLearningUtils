@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
 import tensorflow as tf
+import os
 
 
 def plot_original_and_augmented(original_images, augmented_images, index=None, figsize=(10, 5)):
