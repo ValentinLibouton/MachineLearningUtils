@@ -62,3 +62,30 @@ def build_complete_model_from_url(model_url, num_classes, input_shape, output_ac
     model.add(Dense(units=num_classes, activation=output_activation, name="output_layer"))
 
     return model
+
+
+def configure_trainable_layers(model, n_trainable_layers, verbose:bool=False):
+    """
+    Configures the layers of a given model such that all layers except for the
+    last 'n_trainable_layers' are frozen (i.e., set to non-trainable).
+
+    This function sets the entire model as trainable first, then iterates through
+    the layers and freezes each one except for the specified number of layers from the end.
+    If 'verbose' is True, it prints the 'trainable' status of each layer.
+
+    Parameters:
+    - model: A TensorFlow/Keras model to be configured.
+    - n_trainable_layers: Integer specifying the number of layers to keep trainable
+      at the end of the model.
+    - verbose: Boolean, if set to True, the function will print the name and 'trainable'
+      status of each layer.
+
+    Returns:
+    - None, the modifications are applied in-place on the provided model.
+    """
+    model.trainable = True
+    for layer in model.layers[:-n_trainable_layers]:
+        layer.trainable = False
+    if verbose:
+        for i, layer in enumerate(model.layers):
+            print(f"Layer {i+1}: {layer.name}, Trainable: {layer.trainable}")
