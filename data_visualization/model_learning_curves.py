@@ -95,34 +95,34 @@ def compare_histories(original_history, new_history, initial_epochs=5):
 
     # Dynamic detection of metric names
     def find_metric_names(history):
-        loss, val_loss, accuracy, val_accuracy = None, None, None, None
+        loss_key, val_loss_key, accuracy_key, val_accuracy_key = None, None, None, None
         for key in history.history.keys():
             if "val" in key and "loss" in key:
-                val_loss = key
+                val_loss_key = key
             elif "val" in key and "acc" in key:  # To handle 'acc' and 'accuracy
-                val_accuracy = key
+                val_accuracy_key = key
             elif "acc" in key and "val" not in key:  # To handle 'acc' and 'accuracy
-                accuracy = key
+                accuracy_key = key
             elif "loss" in key and "val" not in key:
-                loss = key
-        return loss, val_loss, accuracy, val_accuracy
+                loss_key = key
+        return loss_key, val_loss_key, accuracy_key, val_accuracy_key
 
     # Obtaining metric names for the original history
-    loss, val_loss, accuracy, val_accuracy = find_metric_names(original_history)
+    loss_key, val_loss_key, accuracy_key, val_accuracy_key = find_metric_names(original_history)
 
     # Get original history measurements
-    acc = original_history.history[accuracy]
-    loss = original_history.history[loss]
+    acc_values = original_history.history[accuracy_key]
+    loss_values = original_history.history[loss_key]
 
-    val_acc = original_history.history[val_accuracy]
-    val_loss = original_history.history[val_loss]
+    val_acc_values = original_history.history[val_accuracy_key]
+    val_loss_values = original_history.history[val_loss_key]
 
     # Combining the original history with the new history
-    total_acc = acc + new_history.history[accuracy]
-    total_loss = loss + new_history.history[loss]
+    total_acc = acc_values + new_history.history[accuracy_key]
+    total_loss = loss_values + new_history.history[loss_key]
 
-    total_val_acc = val_acc + new_history.history[val_accuracy]
-    total_val_loss = val_loss + new_history.history[val_loss]
+    total_val_acc = val_acc_values + new_history.history[val_accuracy_key]
+    total_val_loss = val_loss_values + new_history.history[val_loss_key]
 
     plt.figure(figsize=(8, 8))
     plt.subplot(2, 1, 1)
