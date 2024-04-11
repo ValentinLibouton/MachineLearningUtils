@@ -1,5 +1,4 @@
-from tensorflow.config import list_physical_devices experimental
-from tensorflow.config.experimental import set_memory_growth
+import tensorflow as tf
 
 
 def activate_gpu():
@@ -28,11 +27,11 @@ def activate_gpu():
         A message indicating the successful activation of GPU memory growth, an error message if
         a RuntimeError is encountered, or a message indicating fallback to CPU if no GPUs are found.
     """
-    gpus = list_physical_devices('GPU')
+    gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
             for gpu in gpus:
-                set_memory_growth(gpu, True)
+                tf.config.experimental.set_memory_growth(gpu, True)
             print("GPU activated and ready for use with TensorFlow.")
         except RuntimeError as e:
             print(e)
