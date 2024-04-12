@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-def activate_gpu():
+def activate_all_gpus():
     """
     Attempts to activate GPU memory growth for TensorFlow to enable efficient GPU utilization.
 
@@ -32,7 +32,8 @@ def activate_gpu():
         try:
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
-            print("GPU activated and ready for use with TensorFlow.")
+            logical_gpus = tf.config.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
         except RuntimeError as e:
             print(e)
     else:
