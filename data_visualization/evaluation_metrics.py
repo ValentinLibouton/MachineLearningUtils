@@ -5,10 +5,30 @@ import itertools
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
-def make_confusion_matrix(y_true, y_pred, classes=None, figsize=(5, 5), text_size=15, norm=False, savefig=False):
-    # Test if the input arrays have the same length
+def make_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, classes: list = None, figsize: tuple = (5, 5), text_size: int = 15, norm: bool = False, savefig: bool = False, xlabels_rotation: int = 0):
+    """
+    Generates and plots a confusion matrix from true labels and predicted labels.
+
+    Parameters:
+    y_true (np.ndarray): True labels of the data.
+    y_pred (np.ndarray): Predicted labels by the classifier.
+    classes (list, optional): List of class names for the axis labels. If not provided, integer labels are used.
+    figsize (tuple, optional): A tuple representing the figure size. Defaults to (5, 5).
+    text_size (int, optional): Font size of the labels in the plot. Defaults to 15.
+    norm (bool, optional): If True, the confusion matrix will be normalized. Defaults to False.
+    savefig (bool, optional): If True, the figure will be saved as 'confusion_matrix.png' in the current directory. Defaults to False.
+    xlabels_rotation (int, optional): Degrees to rotate the x-axis labels. Defaults to 0 for horizontal labels.
+
+    Raises:
+    ValueError: If `y_true` and `y_pred` are not of the same length.
+
+    Returns:
+    None: This function does not return anything but generates a matplotlib plot and optionally saves it as an image.
+    """
+    
     if len(y_true) != len(y_pred):
         raise ValueError(f"The length of y_true and y_pred must be the same. len(y_true)={len(y_true)}, len(y_pred)={len(y_pred)}")
+    
     # Create the confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis] # normalize our confusion matrix
@@ -38,6 +58,11 @@ def make_confusion_matrix(y_true, y_pred, classes=None, figsize=(5, 5), text_siz
     # Set x-axis labels to bottom
     ax.xaxis.set_label_position("bottom")
     ax.xaxis.tick_bottom()
+
+    # Plot x-labels vertically
+    plt.xticks(rotation=xlabels_rotation, fontsize=text_size)
+    plt.yticks(fontsize=text_size)
+
 
     # Adjust label size
     ax.yaxis.label.set_size(text_size)
