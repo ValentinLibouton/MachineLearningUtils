@@ -6,6 +6,9 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
 def make_confusion_matrix(y_true, y_pred, classes=None, figsize=(5, 5), text_size=15, norm=False, savefig=False):
+    # Test if the input arrays have the same length
+    if len(y_true) != len(y_pred):
+        raise ValueError(f"The length of y_true and y_pred must be the same. len(y_true)={len(y_true)}, len(y_pred)={len(y_pred)}")
     # Create the confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis] # normalize our confusion matrix
