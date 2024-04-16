@@ -3,22 +3,29 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import itertools
+import inspect
+import functools
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
 def apply_defaults(func):
+    @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         defaults = {
             'figsize': self.DEFAULT_FIGSIZE,
-            'fontsize': self.DEFAULT_FONTSIZE,
-            'normalize': self.DEFAULT_NORMALIZE,
+            'fontsize': self.DEFAULT_TEXT_SIZE,
             'savefig': self.DEFAULT_SAVEFIG,
             'xlabels_rotation': self.DEFAULT_XLABELS_ROTATION
         }
+        # Get the signature of the function
+        sig = inspect.signature(func)
+        # For each default key, check if it exists in the function's parameters
         for key, default in defaults.items():
-            if key not in kwargs or kwargs[key] is None:
-                kwargs[key] = default
+            if key in sig.parameters:
+                # Set default only if not already specified in kwargs
+                kwargs.setdefault(key, default)
+        
         return func(self, *args, **kwargs)
     return wrapper
 
