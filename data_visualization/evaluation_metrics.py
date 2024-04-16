@@ -7,8 +7,28 @@ from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
+def apply_defaults(func):
+    def wrapper(self, *args, **kwargs):
+        defaults = {
+            'figsize': self.DEFAULT_FIGSIZE,
+            'fontsize': self.DEFAULT_FONTSIZE,
+            'normalize': self.DEFAULT_NORMALIZE,
+            'savefig': self.DEFAULT_SAVEFIG,
+            'xlabels_rotation': self.DEFAULT_XLABELS_ROTATION
+        }
+        for key, default in defaults.items():
+            if key not in kwargs or kwargs[key] is None:
+                kwargs[key] = default
+        return func(self, *args, **kwargs)
+    return wrapper
 
 class ClassificationReportProcessor:
+    # Class-level default attributes
+    DEFAULT_FIGSIZE = (12, 12)
+    DEFAULT_FONTSIZE = 12
+    DEFAULT_NORMALIZE = False
+    DEFAULT_SAVEFIG = False
+    DEFAULT_XLABELS_ROTATION = 0
     def __init__(self, y_true, y_pred, class_names=None):
         """
         Initializes the processor with true and predicted labels to generate a classification report.
@@ -40,7 +60,7 @@ class ClassificationReportProcessor:
             self.__report = {label_to_name.get(key, key): value for key, value in self.__report.items()}
                 
 
-    def get_class_report(self, class_name):
+    def get_class_report(self, class_name) -> dict:
         """
         Retrieve the classification metrics for a given class.
 
@@ -51,10 +71,9 @@ class ClassificationReportProcessor:
         dict: A dictionary of classification metrics for the specified class, or a message if the class is not found.
         """
         return self.__report.get(str(class_name), "Class not found")
-    
 
     @property
-    def class_names(self):
+    def class_names(self) -> list:
         """
         Property that returns the class names used in the classification report, excluding any aggregate statistics entries.
 
@@ -65,51 +84,113 @@ class ClassificationReportProcessor:
 
 
     @property
-    def f1_scores(self):
+    def f1_scores(self) -> pd.DataFrame:
         """
-        Returns a dictionary of f1-scores for all classes.
+        Returns a DataFrame of f1-scores for all classes.
 
         Returns:
-        dict: Dictionary with class names as keys and f1-scores as values.
+        DataFrame: DataFrame with class names as indices and f1-scores as values.
         """
-        return {class_name: info['f1-score'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        f1_scores_dict = {class_name: info['f1-score'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        return pd.DataFrame(list(f1_scores_dict.items()), columns=['class', 'f1-scores']).set_index('class')
     
     
     @property
-    def precisions(self):
+    def precisions(self) -> pd.DataFrame:
         """
-        Returns a dictionary of precisions for all classes.
+        Returns a DataFrame of precision values for each class evaluated by the classifier.
+
+        Precision measures the accuracy of positive predictions. It is the ratio of correctly predicted positive observations to the total predicted positives. This property constructs a DataFrame where each row corresponds to a class and its precision value, highlighting the classifier's accuracy in predicting each class as a positive instance.
 
         Returns:
-        dict: Dictionary with class names as keys and precisions as values.
+        DataFrame: DataFrame with class names as indices and precision values as column data. This setup allows for straightforward analysis or visualization of the precision metric across different classes.
         """
-        return {class_name: info['precision'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        precisions_dict = {class_name: info['precision'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        return pd.DataFrame(list(precisions_dict.items()), columns=['class', 'precisions']).set_index('class')
     
 
     @property
-    def recalls(self):
+    def recalls(self) -> pd.DataFrame:
         """
-        Returns a dictionary of recalls for all classes.
+        Returns a DataFrame of recall values for each class evaluated by the classifier.
+
+        Recall, also known as sensitivity, measures the ability of the classifier to find all the relevant cases within a class. This property generates a DataFrame where each row represents a class with its associated recall value, effectively showing how well the classifier can identify each class without missing cases.
 
         Returns:
-        dict: Dictionary with class names as keys and recalls as values.
+        DataFrame: DataFrame with class names as indices and recall values as column data, facilitating easy access and manipulation of the recall metrics for further analysis or visualization.
         """
-        return {class_name: info['recall'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        recalls_dict = {class_name: info['recall'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        return pd.DataFrame(list(recalls_dict.items()), columns=['class', 'recalls']).set_index('class')
 
 
     @property
-    def supports(self):
+    def specificity(self) -> pd.DataFrame:
         """
-        Returns a dictionary of supports for all classes.
+        Calculate the specificity for each class, which is the true negative rate.
 
         Returns:
-        dict: Dictionary with class names as keys and support numbers as values.
+        DataFrame: A DataFrame containing the specificity for each class with columns 'Class' and 'Specificity'.
         """
-        return {class_name: info['support'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
-    
+        cm = self.confusion_matrix
+        total_instances = cm.sum()
+        class_specificities = []
+
+        for idx, class_name in enumerate(self.__class_names):
+            # Calculate TN: Sum everything but the row and column for the current class
+            tn = total_instances - (cm[idx, :].sum() + cm[:, idx].sum() - cm[idx, idx])
+            # Calculate FP: Sum the column for the current class minus the diagonal (true positives)
+            fp = cm[:, idx].sum() - cm[idx, idx]
+            # Calculate specificity
+            specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+            class_specificities.append((class_name, specificity))
+
+        return pd.DataFrame(class_specificities, columns=['class', 'specificity'])
+
 
     @property
-    def average_precision(self):
+    def supports(self) -> pd.DataFrame:
+        """
+        Returns a DataFrame of support counts for all classes.
+
+        This method returns the support counts (the number of instances for each class) from the classification report,
+        structured into a DataFrame for easy analysis and visualization.
+
+        Returns:
+        DataFrame: A DataFrame with 'class' as one column and 'supports' as another column, where 'class' is set as the DataFrame's index.
+        """
+        supports_dict = {class_name: info['support'] for class_name, info in self.__report.items() if class_name not in self.__totals_list}
+        return pd.DataFrame(list(supports_dict.items()), columns=['class', 'supports']).set_index('class')
+
+
+    @property
+    def report_to_dataframe(self) -> pd.DataFrame:
+        """
+        Converts the classification report to a pandas DataFrame for easier analysis and visualization, with all metric columns in lowercase.
+
+        This method concatenates several DataFrames, each containing a different metric for all classes,
+        into a single DataFrame for a comprehensive view of classifier performance.
+
+        Returns:
+        DataFrame: A DataFrame containing precision, recall, f1-score, specificity, and support for each class,
+        with class names as a column.
+        """
+        metric_df = pd.concat([
+            self.class_names,
+            self.precisions,
+            self.recalls,
+            self.specificity,
+            self.f1_scores,
+            self.supports
+        ], axis=1)
+        return metric_df.reset_index().rename(columns={'index': 'class_name'})
+
+
+    ##########################################################################
+    # Averages & Totals
+    ##########################################################################
+
+    @property
+    def average_precision(self) -> float:
         """
         Calculate the weighted average precision across all classes.
 
@@ -120,7 +201,7 @@ class ClassificationReportProcessor:
 
 
     @property
-    def average_recall(self):
+    def average_recall(self) -> float:
         """
         Calculate the weighted average recall across all classes.
 
@@ -131,7 +212,7 @@ class ClassificationReportProcessor:
 
 
     @property
-    def average_f1_score(self):
+    def average_f1_score(self) -> float:
         """
         Calculate the weighted average f1-score across all classes.
 
@@ -142,7 +223,7 @@ class ClassificationReportProcessor:
 
 
     @property
-    def total_support(self):
+    def total_support(self) -> int:
         """
         Sum the support across all classes, which corresponds to the total number of samples.
 
@@ -150,10 +231,13 @@ class ClassificationReportProcessor:
         int: Total number of samples (support).
         """
         return sum(class_info['support'] for class_name, class_info in self.__report.items() if class_name not in self.__totals_list)
-    
+
+    ##########################################################################
+    # Confusion Matrix & Plotting
+    ##########################################################################
 
     @property
-    def confusion_matrix(self):
+    def confusion_matrix(self) -> np.ndarray:
         """
         Property that returns the confusion matrix as a numpy array.
 
@@ -162,8 +246,8 @@ class ClassificationReportProcessor:
         """
         return confusion_matrix(self.__y_true, self.__y_pred)
 
-
-    def make_confusion_matrix(self, figsize=(5, 5), text_size=15, norm=False, savefig=False, xlabels_rotation=0):
+    @apply_defaults
+    def make_confusion_matrix(self, figsize, fontsize, normalize, savefig, xlabels_rotation):
         """
         Generates and plots a confusion matrix from true labels and predicted labels.
 
@@ -175,7 +259,7 @@ class ClassificationReportProcessor:
         xlabels_rotation (int, optional): Degrees to rotate the x-axis labels. Defaults to 0 for horizontal labels.
         """
         cm = self.confusion_matrix
-        cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis] if norm else cm
+        cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis] if normalize else cm
         labels = self.__class_names
 
         fig, ax = plt.subplots(figsize=figsize)
@@ -192,15 +276,15 @@ class ClassificationReportProcessor:
 
         ax.xaxis.set_label_position("bottom")
         ax.xaxis.tick_bottom()
-        plt.xticks(rotation=xlabels_rotation, fontsize=text_size)
-        plt.yticks(fontsize=text_size)
+        plt.xticks(rotation=xlabels_rotation, fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
 
         threshold = (cm.max() + cm.min()) / 2
         for i, j in itertools.product(range(len(labels)), range(len(labels))):
-            plt.text(j, i, f"{cm_norm[i, j]:.0f}" if norm else f"{cm[i, j]}",
+            plt.text(j, i, f"{cm_norm[i, j]:.0f}" if normalize else f"{cm[i, j]}",
                      horizontalalignment="center",
                      color="white" if cm[i, j] > threshold else "black",
-                     size=text_size)
+                     size=fontsize)
 
         if savefig:
             fig.savefig("confusion_matrix.png", dpi=300)
@@ -208,7 +292,7 @@ class ClassificationReportProcessor:
 
     
     @property
-    def confusion_matrix_to_dataframe(self):
+    def confusion_matrix_to_dataframe(self) -> pd.DataFrame:
         """
         Property that returns the confusion matrix as a pandas DataFrame, which can be used for plotting or analysis.
 
@@ -217,62 +301,149 @@ class ClassificationReportProcessor:
         """
         return pd.DataFrame(self.confusion_matrix, index=self.__class_names, columns=self.__class_names)
 
-    
-    @property
-    def specificity(self):
-        """
-        Calculate the specificity for each class, which is the true negative rate.
 
-        Returns:
-        dict: Dictionary of specificity for each class.
+    @apply_defaults
+    def plot_f1_scores(self, figsize, fontsize, savefig):
         """
-        cm = self.confusion_matrix
-        specificity_dict = {}
-        total_instances = cm.sum()
-        
-        for idx, class_name in enumerate(self.__class_names):
-            # Calculate TN: Sum everything but the row and column for the current class
-            tn = total_instances - (cm[idx, :].sum() + cm[:, idx].sum() - cm[idx, idx])
-            # Calculate FP: Sum the column for the current class minus the diagonal (true positives)
-            fp = cm[:, idx].sum() - cm[idx, idx]
-            # Calculate specificity
-            specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
-            specificity_dict[class_name] = specificity
-        
-        return specificity_dict
+        Plots the F1-scores for each class in a horizontal bar chart.
 
-    
-    @property
-    def specificity_to_dataframe(self):
+        This method visualizes the F1-scores for all classes handled by the processor,
+        providing a clear and intuitive graphical representation of model performance across different classes.
+
+        Parameters:
+        figsize: A tuple defining the dimensions of the figure (width, height). The size impacts how the plot is displayed.
+        fontsize: The font size for all text elements in the plot, including axis labels and titles. This setting helps in making the plot more readable.
+        savefig: A boolean that, if True, saves the plot to a file named 'f1_scores.png' in the current working directory. This option allows for easy preservation and sharing of the plot.
+
+        The plot inverts the y-axis to display higher F1 scores at the top, enhancing the visual impact and readability of performance differences among classes.
         """
-        Converts the specificity scores for each class into a pandas DataFrame for easier analysis and visualization.
-    
-        This property retrieves the specificity values calculated for each class, then organizes these values into a DataFrame with two columns: 'Class' and 'Specificity'. Each row in the DataFrame corresponds to a class and its associated specificity score, facilitating clear and structured presentation of the data.
-    
-        Returns:
-        DataFrame: A DataFrame where each row represents a class and its corresponding specificity score, with columns labeled 'Class' and 'Specificity'.
-        """
-        return pd.DataFrame(list(self.specificity.items()), columns=['Class', 'Specificity'])
-    
-    
-    @property
-    def report_to_dataframe(self):
-        """
-        Converts the classification report to a pandas DataFrame for easier analysis and visualization.
-        
-        Returns:
-        DataFrame: A DataFrame containing precision, recall, f1-score, specificity, and support for each class.
-        """
-        return pd.DataFrame({
-            'class_name': self.class_names,
-            'precision': self.precisions.values(),
-            'recall': self.recalls.values(),
-            'specificity': self.specificity.values(),
-            'f1-score': self.f1_scores.values(),
-            'support': self.supports.values()
-        })
+        f1_scores = self.f1_scores()
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.barh(f1_scores.index, f1_scores['f1_score'])
+        ax.set_xlabel("F1 Score", fontsize=fontsize)
+        ax.set_title("F1 Scores for different classes", fontsize=fontsize)
+        ax.invert_yaxis()  # Higher values appear at the top
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        if savefig:
+            plt.savefig("f1_scores.png", dpi=300)
+        plt.show()
 
 
+    @apply_defaults
+    def plot_precisions(self, figsize, fontsize, savefig):
+        """
+        Plots the precisions for each class in a horizontal bar chart.
+
+        Precision measures the accuracy of the positive predictions. This method visualizes the precision scores
+        for all classes handled by the processor, offering a clear and intuitive graphical representation of
+        the model's ability to correctly identify positive instances across different classes.
+
+        Parameters:
+        figsize: A tuple defining the dimensions of the figure (width, height).
+        fontsize: The font size for all text elements in the plot, including axis labels and titles.
+        savefig: A boolean that determines whether to save the plot to a file named 'precisions.png'.
+
+        The plot inverses the y-axis to display higher scores at the top for better visual interpretation.
+        """
+        precisions = self.precisions()
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.barh(precisions.index, precisions['precision'])
+        ax.set_xlabel("Precision", fontsize=fontsize)
+        ax.set_title("Precisions for different classes", fontsize=fontsize)
+        ax.invert_yaxis()
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        if savefig:
+            plt.savefig("precisions.png", dpi=300)
+        plt.show()
+
+
+    @apply_defaults
+    def plot_recalls(self, figsize, fontsize, savefig):
+        """
+        Plots the recalls for each class in a horizontal bar chart.
+
+        Recall measures the ability of the model to identify all relevant instances within each class. This method
+        visualizes the recall scores for all classes, providing a clear and intuitive graphical representation of
+        the model's sensitivity across different classes.
+
+        Parameters:
+        figsize: A tuple defining the dimensions of the figure (width, height).
+        fontsize: The font size for all text elements in the plot, including axis labels and titles.
+        savefig: A boolean that determines whether to save the plot to a file named 'recalls.png'.
+
+        The plot inverses the y-axis to ensure higher values are at the top, aiding in quick visual assessment.
+        """
+        recalls = self.recalls()
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.barh(recalls.index, recalls['recall'])
+        ax.set_xlabel("Recall", fontsize=fontsize)
+        ax.set_title("Recalls for different classes",fontsize=fontsize)
+        ax.invert_yaxis()
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        if savefig:
+            plt.savefig("recalls.png", dpi=300)
+        plt.show()
+
+
+    @apply_defaults
+    def plot_specificity(self, figsize, fontsize, savefig):
+        """
+        Plots the specificity for each class in a horizontal bar chart.
+
+        Specificity measures the true negative rate for each class. This method visualizes the specificity scores
+        for all classes handled by the processor, providing a clear and intuitive graphical representation of
+        the model's performance in identifying true negatives across different classes.
+
+        Parameters:
+        figsize: A tuple defining the dimensions of the figure (width, height).
+        fontsize: The font size for all text elements in the plot, including axis labels and titles.
+        savefig: A boolean that determines whether to save the plot to a file named 'specificity.png'.
+
+        The y-axis is inverted to display higher values at the top for easier comparison and better visual clarity.
+        """
+        specificity = self.specificity()
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.barh(specificity.index, specificity['specificity'])
+        ax.set_xlabel("Specificity", fontsize=fontsize)
+        ax.set_title("Specificity for different classes", fontsize=fontsize)
+        ax.invert_yaxis()
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        if savefig:
+            plt.savefig("specificity.png", dpi=300)
+        plt.show()
+
+
+    @apply_defaults
+    def plot_supports(self, figsize, fontsize, savefig):
+        """
+        Plots the support counts for each class in a horizontal bar chart.
+
+        Support counts indicate the number of samples for each class in the dataset. This method visualizes
+        the support counts for all classes, providing a clear and intuitive graphical representation of the
+        sample distribution across different classes.
+
+        Parameters:
+        figsize: A tuple defining the dimensions of the figure (width, height).
+        fontsize: The font size for all text elements in the plot, including axis labels and titles.
+        savefig: A boolean that determines whether to save the plot to a file named 'supports.png'.
+
+        The y-axis is inverted to highlight classes with more samples at the top, enhancing readability and comparison.
+        """
+        supports = self.supports()
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.barh(supports.index, supports['supports'])
+        ax.set_xlabel("Supports", fontsize=fontsize)
+        ax.set_title("Supports for different classes", fontsize=fontsize)
+        ax.invert_yaxis()
+        plt.xticks(fontsize=fontsize)
+        plt.yticks(fontsize=fontsize)
+        if savefig:
+            plt.savefig("supports.png", dpi=300)
+        plt.show()
 
 def make_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, classes: list = None, figsize: tuple = (5, 5), text_size: int = 15, norm: bool = False, savefig: bool = False, xlabels_rotation: int = 0):
     """
