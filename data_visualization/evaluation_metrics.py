@@ -14,7 +14,7 @@ def apply_defaults(func):
     def wrapper(self, *args, **kwargs):
         defaults = {
             'figsize': self.DEFAULT_FIGSIZE,
-            'fontsize': self.DEFAULT_TEXT_SIZE,
+            'fontsize': self.DEFAULT_FONTSIZE,
             'savefig': self.DEFAULT_SAVEFIG,
             'xlabels_rotation': self.DEFAULT_XLABELS_ROTATION
         }
