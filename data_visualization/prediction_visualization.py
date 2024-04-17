@@ -5,6 +5,7 @@ from random import randint
 import random
 from pathlib import Path
 import os
+import pandas as pd
 
 
 class ImagePredictionAnalyzer:
