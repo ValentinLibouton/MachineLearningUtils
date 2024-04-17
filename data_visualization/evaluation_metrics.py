@@ -16,7 +16,8 @@ def apply_defaults(func):
             'figsize': self.DEFAULT_FIGSIZE,
             'fontsize': self.DEFAULT_FONTSIZE,
             'savefig': self.DEFAULT_SAVEFIG,
-            'xlabels_rotation': self.DEFAULT_XLABELS_ROTATION
+            'xlabels_rotation': self.DEFAULT_XLABELS_ROTATION,
+            'sort_ascending': self.DEFAULT_SORT_ASCENDING
         }
         # Get the signature of the function
         sig = inspect.signature(func)
@@ -36,6 +37,7 @@ class ClassificationReportProcessor:
     DEFAULT_NORMALIZE = False
     DEFAULT_SAVEFIG = False
     DEFAULT_XLABELS_ROTATION = 0
+    DEFAULT_SORT_ASCENDING = True
     def __init__(self, y_true, y_pred, class_names=None):
         """
         Initializes the processor with true and predicted labels to generate a classification report.
@@ -67,7 +69,7 @@ class ClassificationReportProcessor:
             self.__report = {label_to_name.get(key, key): value for key, value in self.__report.items()}
                 
 
-    def get_class_report(self, class_name) -> dict:
+    def get_class_report(self, class_name):
         """
         Retrieve the classification metrics for a given class.
 
@@ -310,7 +312,7 @@ class ClassificationReportProcessor:
 
 
     @apply_defaults
-    def plot_f1_scores(self, figsize, fontsize, savefig):
+    def plot_f1_scores(self, figsize, fontsize, savefig, sort_ascending):
         """
         Plots the F1-scores for each class in a horizontal bar chart.
 
@@ -324,12 +326,11 @@ class ClassificationReportProcessor:
 
         The plot inverts the y-axis to display higher F1 scores at the top, enhancing the visual impact and readability of performance differences among classes.
         """
-        f1_scores = self.f1_scores
+        f1_scores = self.f1_scores.sort_values(by='f1-scores', ascending=sort_ascending)
         fig, ax = plt.subplots(figsize=figsize)
-        ax.barh(f1_scores.index, f1_scores['f1_score'])
+        ax.barh(f1_scores.index, f1_scores['f1-scores'])
         ax.set_xlabel("F1 Score", fontsize=fontsize)
         ax.set_title("F1 Scores for different classes", fontsize=fontsize)
-        ax.invert_yaxis()  # Higher values appear at the top
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if savefig:
@@ -338,7 +339,7 @@ class ClassificationReportProcessor:
 
 
     @apply_defaults
-    def plot_precisions(self, figsize, fontsize, savefig):
+    def plot_precisions(self, figsize, fontsize, savefig, sort_ascending):
         """
         Plots the precisions for each class in a horizontal bar chart.
 
@@ -353,12 +354,11 @@ class ClassificationReportProcessor:
 
         The plot inverses the y-axis to display higher scores at the top for better visual interpretation.
         """
-        precisions = self.precisions
+        precisions = self.precisions.sort_values(by='precisions', ascending=sort_ascending)
         fig, ax = plt.subplots(figsize=figsize)
-        ax.barh(precisions.index, precisions['precision'])
+        ax.barh(precisions.index, precisions['precisions'])
         ax.set_xlabel("Precision", fontsize=fontsize)
         ax.set_title("Precisions for different classes", fontsize=fontsize)
-        ax.invert_yaxis()
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if savefig:
@@ -367,7 +367,7 @@ class ClassificationReportProcessor:
 
 
     @apply_defaults
-    def plot_recalls(self, figsize, fontsize, savefig):
+    def plot_recalls(self, figsize, fontsize, savefig, sort_ascending):
         """
         Plots the recalls for each class in a horizontal bar chart.
 
@@ -382,12 +382,11 @@ class ClassificationReportProcessor:
 
         The plot inverses the y-axis to ensure higher values are at the top, aiding in quick visual assessment.
         """
-        recalls = self.recalls
+        recalls = self.recalls.sort_values(by='recalls', ascending=sort_ascending)
         fig, ax = plt.subplots(figsize=figsize)
-        ax.barh(recalls.index, recalls['recall'])
+        ax.barh(recalls.index, recalls['recalls'])
         ax.set_xlabel("Recall", fontsize=fontsize)
         ax.set_title("Recalls for different classes",fontsize=fontsize)
-        ax.invert_yaxis()
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if savefig:
@@ -396,7 +395,7 @@ class ClassificationReportProcessor:
 
 
     @apply_defaults
-    def plot_specificity(self, figsize, fontsize, savefig):
+    def plot_specificity(self, figsize, fontsize, savefig, sort_ascending):
         """
         Plots the specificity for each class in a horizontal bar chart.
 
@@ -411,12 +410,11 @@ class ClassificationReportProcessor:
 
         The y-axis is inverted to display higher values at the top for easier comparison and better visual clarity.
         """
-        specificity = self.specificity
+        specificity = self.specificity.sort_values(by='specificity', ascending=sort_ascending)
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(specificity.index, specificity['specificity'])
         ax.set_xlabel("Specificity", fontsize=fontsize)
         ax.set_title("Specificity for different classes", fontsize=fontsize)
-        ax.invert_yaxis()
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if savefig:
@@ -425,7 +423,7 @@ class ClassificationReportProcessor:
 
 
     @apply_defaults
-    def plot_supports(self, figsize, fontsize, savefig):
+    def plot_supports(self, figsize, fontsize, savefig, sort_ascending):
         """
         Plots the support counts for each class in a horizontal bar chart.
 
@@ -440,17 +438,18 @@ class ClassificationReportProcessor:
 
         The y-axis is inverted to highlight classes with more samples at the top, enhancing readability and comparison.
         """
-        supports = self.supports
+        supports = self.supports.sort_values(by='supports', ascending=sort_ascending)
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(supports.index, supports['supports'])
         ax.set_xlabel("Supports", fontsize=fontsize)
         ax.set_title("Supports for different classes", fontsize=fontsize)
-        ax.invert_yaxis()
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if savefig:
             plt.savefig("supports.png", dpi=300)
         plt.show()
+
+
 
 def make_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, classes: list = None, figsize: tuple = (5, 5), text_size: int = 15, norm: bool = False, savefig: bool = False, xlabels_rotation: int = 0):
     """
