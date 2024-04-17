@@ -324,7 +324,7 @@ class ClassificationReportProcessor:
 
         The plot inverts the y-axis to display higher F1 scores at the top, enhancing the visual impact and readability of performance differences among classes.
         """
-        f1_scores = self.f1_scores()
+        f1_scores = self.f1_scores
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(f1_scores.index, f1_scores['f1_score'])
         ax.set_xlabel("F1 Score", fontsize=fontsize)
@@ -353,7 +353,7 @@ class ClassificationReportProcessor:
 
         The plot inverses the y-axis to display higher scores at the top for better visual interpretation.
         """
-        precisions = self.precisions()
+        precisions = self.precisions
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(precisions.index, precisions['precision'])
         ax.set_xlabel("Precision", fontsize=fontsize)
@@ -382,7 +382,7 @@ class ClassificationReportProcessor:
 
         The plot inverses the y-axis to ensure higher values are at the top, aiding in quick visual assessment.
         """
-        recalls = self.recalls()
+        recalls = self.recalls
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(recalls.index, recalls['recall'])
         ax.set_xlabel("Recall", fontsize=fontsize)
@@ -411,7 +411,7 @@ class ClassificationReportProcessor:
 
         The y-axis is inverted to display higher values at the top for easier comparison and better visual clarity.
         """
-        specificity = self.specificity()
+        specificity = self.specificity
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(specificity.index, specificity['specificity'])
         ax.set_xlabel("Specificity", fontsize=fontsize)
@@ -440,7 +440,7 @@ class ClassificationReportProcessor:
 
         The y-axis is inverted to highlight classes with more samples at the top, enhancing readability and comparison.
         """
-        supports = self.supports()
+        supports = self.supports
         fig, ax = plt.subplots(figsize=figsize)
         ax.barh(supports.index, supports['supports'])
         ax.set_xlabel("Supports", fontsize=fontsize)

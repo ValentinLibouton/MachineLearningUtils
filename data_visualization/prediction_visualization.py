@@ -74,45 +74,51 @@ def predict_and_display_image(model, file_path, class_names):
         print(f"An error occurred during prediction or visualization: {e}")
 
 
-def predict_random_image(model, images, true_labels, classes):
+def predict_random_images(model, images, true_labels, classes, num_images=1, figsize=(15, 15)):
     """
-    Selects a random image from a dataset, uses the provided model to make a prediction on it,
-    and displays the image with the predicted and true class labels.
+    Selects multiple random images from a dataset, uses the provided model to make predictions on them,
+    and displays the images with their predicted and true class labels.
 
     Parameters:
     - model: The trained model used for making predictions.
     - images: Array or list of images in the dataset.
     - true_labels: Array or list of true labels corresponding to the images.
     - classes: List of class names that correspond to the output layer of the model.
+    - num_images: Number of random images to predict and display.
 
     Note: The function assumes that images are preprocessed appropriately for the model.
     """
 
-    # Set up random integer
-    i = randint(0, len(images))
+    plt.figure(figsize=figsize)
 
-    # Create predictions and tagets
-    target_image = images[i]
-    pred_probs = model.predict(target_image.reshape(1, 28, 28))
-    pred_label = classes[pred_probs.argmax()]
-    true_label = classes[true_labels[i]]
 
-    # Plot the image
-    plt.imshow(target_image, cmap=plt.cm.binary)
+    for img_num in range(num_images):
+        # Set up random integer
+        i = randint(0, len(images))
 
-    # Change the color of the titles depending on if the prediction is right or
-    # wrong
-    if pred_label == true_label:
-        color = "green"
-    else:
-        color = "red"
+        # Create predictions and tagets
+        target_image = images[i].reshape(1, *images[i].shape)
+        pred_probs = model.predict(target_image)
+        pred_label = classes[pred_probs.argmax()]
+        true_label = classes[true_labels[i]]
 
-    # Add xlabel information (prediction/true label)
-    plt.xlabel("Pred: {} {:2.0f}% (True: {})".format(pred_label,
-                                                     100 * tf.reduce_max(pred_probs),
-                                                     true_label),
-               color=color)  # set the color to green or red based on if prediction
-    # is right or wrong
+        # Plot the image in a subplot
+        plt.subplot(1, num_images, img_num + 1)
+        plt.imshow(images[i], cmap=plt.cm.binary)
+        plt.xticks([])  # Remove x ticks
+        plt.yticks([])  # Remove y ticks
+
+        # Change the color of the titles depending on if the prediction is right or
+        # wrong
+        color = "green" if pred_label == true_label else "red"
+
+        # Add xlabel information (prediction/true label)
+        plt.xlabel("Pred: {} {:2.0f}% (True: {})".format(pred_label,
+                                                         100 * tf.reduce_max(pred_probs),
+                                                         true_label),
+                   color=color)  # set the color to green or red based on if prediction
+        # is right or wrong
+    plt.show()
 
 
 def plot_decision_boundary(model, X, y):
