@@ -131,7 +131,7 @@ def prepare_image(file_path, img_shape=224, scale=True, channels=3):
         return None
 
 
-def predict_and_display_image(model, file_path, class_names):
+def predict_and_display_image(model, file_path, class_names, scale=True):
     """
     Loads an image from a specified file path, makes a prediction using the provided model,
     and plots the image with the predicted class label as the title.
@@ -145,24 +145,24 @@ def predict_and_display_image(model, file_path, class_names):
     Returns:
     None. This function directly shows a plot of the image with the predicted class label.
     """
-    img = prepare_image(file_path)
-
+    img = prepare_image(file_path, scale=scale)  # Assurez-vous que cette fonction redimensionne et normalise correctement l'image
     if img is None:
         print("Image preparation failed.")
         return
     try:
-        # Make a prediction
-        pred = model.predict(tf.expand_dims(img, axis=0))
+        pred = model.predict(tf.expand_dims(img, axis=0))[0]
 
-        # Get the predicted class (binary or multi-class
-        if len(pred[0]) > 1:
-            pred_class = class_names[tf.argmax(pred[0])]
-        else:
-            pred_class = class_names[int(tf.round(pred[0]))]
+        if len(class_names) == 2:  # Cas binaire
+            pred_class = class_names[int(tf.round(pred))]
+            pred_probability = pred if len(pred) == 1 else max(pred)  # Utilisez directement la valeur si une seule sortie
+        else:  # Cas multiclasse
+            pred_class_index = pred.argmax()
+            pred_probability = tf.reduce_max(pred)
+            pred_class = class_names[pred_class_index]
 
-        # Plot the image and predicted class
-        plt.imshow(img)
-        plt.title(f"Prediction: {pred_class}")
+        # Affichage de l'image, du nom de classe et de la probabilité
+        plt.imshow(img/255.)
+        plt.title(f"Prediction: {pred_class} with probability {pred_probability:.2f}")
         plt.axis(False)
         plt.show()
     except Exception as e:
