@@ -546,18 +546,20 @@ def evaluate_classification_metrics(y_true, y_pred):
     y_pred (array-like): Predicted labels as determined by the classifier, expected to be a 1D array of binary values.
 
     Returns:
-    dict: A dictionary containing the calculated metrics: accuracy, precision, recall, and F1 score. Each metric is provided as a floating-point value representing the model's performance in that specific area.
+    dict: A dictionary containing the calculated metrics: accuracy, precision, recall, F1 score and support. Each metric is provided as a floating-point value representing the model's performance in that specific area.
 
     Example:
     results = evaluate_binary_classification_metrics(y_true=[0, 1, 1, 0], y_pred=[1, 1, 1, 0])
-    print(results)  # Output might be: {'accuracy': 75.0, 'precision': 0.66, 'recall': 1.0, 'f1': 0.8}
+    print(results)  # Output might be: {'accuracy': 75.0, 'precision': 0.66, 'recall': 1.0, 'f1': 0.8, 'support':250}
     """
     # Calculate model accuracy
     model_accuracy = accuracy_score(y_true, y_pred) * 100
     # Calculate model precision, recall and f1 score using "weighted average
-    model_precision, model_recall, model_f1, _ = precision_recall_fscore_support(y_true, y_pred, average="weighted")
+    model_precision, model_recall, model_f1, support = precision_recall_fscore_support(y_true, y_pred, average="weighted")
     model_results = {"accuracy": model_accuracy,
                      "precision": model_precision,
                      "recall": model_recall,
-                     "f1": model_f1}
+                     "f1": model_f1,
+                     "support": support}
+
     return model_results
