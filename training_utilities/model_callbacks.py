@@ -41,7 +41,7 @@ def create_model_checkpoint(model_name, dir_name="model_experiments", monitor="v
         model.fit(x_train, y_train, callbacks=[checkpoint_callback])
     """
     filepath = Path(dir_name) / model_name
-    return tf.keras.callbacks.ModelCheckpoint(filepath=filepath,
+    return tf.keras.callbacks.ModelCheckpoint(filepath=str(filepath),
                                               monitor=monitor,
                                               verbose=verbose,
                                               save_best_only=save_best_only)
